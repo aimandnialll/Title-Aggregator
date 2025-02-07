@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -24,10 +26,21 @@ jobs:
       - name: Run Scraper
         run: python scraper.py
 
+      - name: Check articles.json content
+        run: cat articles.json || echo "articles.json not found or empty"
+
+      - name: Check Git status
+        run: git status
+
       - name: Commit and push changes
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add articles.json
-          git commit -m "Auto-updated articles" || exit 0
-          git push
+          if [ -s articles.json ]; then
+            git add articles.json
+            git commit -m "Auto-updated articles" || echo "No changes to commit."
+            git pull --rebase origin main
+            git push origin main || echo "Failed to push changes."
+          else
+            echo "No changes to commit."
+          fi
